@@ -7,8 +7,9 @@ A slim Python interface for Mozilla's [DeepSpeech](https://github.com/mozilla/De
 
 ## Usage
 
+
 ```
-from src.core import deepspeech_predict
+from src.deepspeech_tts import deepspeech_predict
 
 ouput_text: str = deepspeech_predict(wav_file_path)
 ```
