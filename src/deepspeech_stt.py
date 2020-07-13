@@ -4,9 +4,12 @@ import subprocess
 import time
 import wave
 
+import librosa
 import numpy as np
 from deepspeech import Model
 from scipy.io import wavfile as wav
+
+from src.processing import denoise
 
 try:
     from shhlex import quote
@@ -14,12 +17,12 @@ except ImportError:
     from pipes import quote
 
 
-MODEL_PATH: str = os.getenv("MODEL_PATH", "model/deepspeech-0.7.4-models.pbmm")
+MODEL_PATH: str = os.getenv("MODEL_PATH", os.getcwd() + "/model/deepspeech-0.7.4-models.pbmm")
 
 
 # Reference: https://deepspeech.readthedocs.io/en/v0.7.4/Python-Examples.html
 def convert_samplerate(audio_path: str, desired_sample_rate: int) -> np.ndarray:
-    sox_cmd: str = "sox {} --type raw --bits 16 --channels 1 --rate {} --encoding signed-integer --endian little --compression 0.0 --no-dither - ".format(
+    sox_cmd: str = "sox {} --type raw --bits 16 --channels 1 --rate {} --encoding signed-integer --endian little --compression 0.0 --no-dither -".format(
         quote(audio_path), desired_sample_rate
     )
     output: bytes = b""
@@ -42,12 +45,18 @@ def metadata_to_string(metadata):
     return "".join(token.text for token in metadata.tokens).strip()
 
 
-def deepspeech_predict(wave_filename: str) -> str:
+def deepspeech_predict(wave_filename: str, noisy: bool = False) -> str:
     if not os.path.isfile(MODEL_PATH):
         raise Exception(f"Could not find model at {MODEL_PATH}")
 
     ds: Model = Model(MODEL_PATH)
     fs, audio = convert_samplerate(wave_filename, ds.sampleRate())
+
+    # NOTE: experimental
+    if noisy:
+        audio = denoise(audio.astype("float32"), ds.sampleRate())
+        audio = audio.astype("int16")
+
     return metadata_to_string(ds.sttWithMetadata(audio, 1).transcripts[0])
 
 

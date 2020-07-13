@@ -6,4 +6,4 @@ __pycache__/
 model/*.pbmm
 *egg-info
 
-notebooks/experimental_samples
+notebooks/experimental_samples/
