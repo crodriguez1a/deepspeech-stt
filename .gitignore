@@ -7,3 +7,4 @@ model/*.pbmm
 *egg-info
 
 notebooks/experimental_samples/
+notebooks/Experiments.ipynb
