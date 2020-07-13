@@ -1,6 +1,6 @@
 import pytest
 
-from src.deepspeech_tts import deepspeech_predict
+from src.deepspeech_stt import deepspeech_predict
 
 
 @pytest.fixture
