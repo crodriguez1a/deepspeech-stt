@@ -1,15 +1,15 @@
-# deepspeech-tts
+# deepspeech-stt
 
 
 ## Introduction
 
-A slim Python interface for Mozilla's [DeepSpeech](https://github.com/mozilla/DeepSpeech/) TTS
+A slim Python interface for Mozilla's [DeepSpeech](https://github.com/mozilla/DeepSpeech/) STT
 
 ## Usage
 
 
 ```
-from src.deepspeech_tts import deepspeech_predict
+from src.deepspeech_stt import deepspeech_predict
 
 ouput_text: str = deepspeech_predict(wav_file_path)
 ```
