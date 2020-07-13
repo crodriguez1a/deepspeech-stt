@@ -1,7 +1,7 @@
 [tool.poetry]
-name = "deepspeech-tts"
+name = "deepspeech-stt"
 version = "0.1.0"
-description = "A slim Python interface for Mozilla's DeepSpeech TTS"
+description = "A slim Python interface for Mozilla's DeepSpeech STT"
 authors = ["crodriguez1a <crodriguez1a@gmail.com>"]
 license = "MIT"
 
