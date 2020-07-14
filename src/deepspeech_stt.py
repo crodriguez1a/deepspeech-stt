@@ -2,14 +2,13 @@ import os
 import shlex
 import subprocess
 import time
-import wave
 
 import librosa
 import numpy as np
-from deepspeech import Model
+from deepspeech import CandidateTranscript, Model
+from logmmse import logmmse
 from scipy.io import wavfile as wav
-
-from src.processing import denoise
+from tqdm.auto import tqdm
 
 try:
     from shhlex import quote
@@ -17,7 +16,9 @@ except ImportError:
     from pipes import quote
 
 
-MODEL_PATH: str = os.getenv("MODEL_PATH", os.getcwd() + "/model/deepspeech-0.7.4-models.pbmm")
+MODEL_PATH: str = os.getenv(
+    "MODEL_PATH", os.getcwd() + "/model/deepspeech-0.7.4-models.pbmm"
+)
 
 
 # Reference: https://deepspeech.readthedocs.io/en/v0.7.4/Python-Examples.html
@@ -41,23 +42,53 @@ def convert_samplerate(audio_path: str, desired_sample_rate: int) -> np.ndarray:
     return desired_sample_rate, np.frombuffer(output, np.int16)
 
 
-def metadata_to_string(metadata):
+def metadata_to_string(metadata: CandidateTranscript):
     return "".join(token.text for token in metadata.tokens).strip()
 
 
-def deepspeech_predict(wave_filename: str, noisy: bool = False) -> str:
+def logmmse_denoise(audio: np.ndarray, sr: int):
+    """
+    LogMMSE speech enhancement/noise reduction alogrithm
+    """
+    return logmmse(audio, sr)
+
+
+def split_on_silence(audio: np.ndarray, top_db: int, model: Model) -> str:
+    # Ref: http://jamesmontgomery.us/blog/Voice_Recognition_Model.html
+    results: list = []
+    audio = audio.astype("float32")
+    y = librosa.effects.split(audio, top_db=top_db, ref=np.mean)
+    for i in tqdm(y):
+        clip = audio[i[0] : i[1]]
+        clip = clip.astype("int16")
+        transcripts = metadata_to_string(model.sttWithMetadata(clip, 1).transcripts[0])
+        if transcripts:
+            print(transcripts, "...")
+        results.append(transcripts)
+
+    return " ".join(results)
+
+
+def deepspeech_predict(
+    wave_filename: str,
+    predict_on_silence: bool = True,
+    top_db: int = 50,
+    denoise: bool = False,
+) -> str:
     if not os.path.isfile(MODEL_PATH):
         raise Exception(f"Could not find model at {MODEL_PATH}")
 
-    ds: Model = Model(MODEL_PATH)
-    fs, audio = convert_samplerate(wave_filename, ds.sampleRate())
+    model: Model = Model(MODEL_PATH)
+    sample_rate: int = model.sampleRate()
+    fs, audio = convert_samplerate(wave_filename, sample_rate)
 
-    # NOTE: experimental
-    if noisy:
-        audio = denoise(audio.astype("float32"), ds.sampleRate())
-        audio = audio.astype("int16")
+    if denoise:
+        audio = logmmse_denoise(audio, sample_rate)
 
-    return metadata_to_string(ds.sttWithMetadata(audio, 1).transcripts[0])
+    if predict_on_silence:
+        return split_on_silence(audio, top_db, model)
+
+    return metadata_to_string(model.sttWithMetadata(audio, 1).transcripts[0])
 
 
 if __name__ == "__main__":

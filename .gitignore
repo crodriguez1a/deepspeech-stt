@@ -8,3 +8,4 @@ model/*.pbmm
 
 notebooks/experimental_samples/
 notebooks/Experiments.ipynb
+notebooks/*.wav
