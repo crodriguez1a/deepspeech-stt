@@ -53,7 +53,7 @@ def logmmse_denoise(audio: np.ndarray, sr: int):
     return logmmse(audio, sr)
 
 
-def split_on_silence(audio: np.ndarray, top_db: int, model: Model) -> str:
+def batch_on_silence(audio: np.ndarray, top_db: int, model: Model) -> str:
     # Ref: http://jamesmontgomery.us/blog/Voice_Recognition_Model.html
     results: list = []
     audio = audio.astype("float32")
@@ -86,7 +86,7 @@ def deepspeech_predict(
         audio = logmmse_denoise(audio, sample_rate)
 
     if predict_on_silence:
-        return split_on_silence(audio, top_db, model)
+        return batch_on_silence(audio, top_db, model)
 
     return metadata_to_string(model.sttWithMetadata(audio, 1).transcripts[0])
 
