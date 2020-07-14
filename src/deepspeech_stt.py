@@ -21,8 +21,12 @@ MODEL_PATH: str = os.getenv(
 )
 
 
-# Reference: https://deepspeech.readthedocs.io/en/v0.7.4/Python-Examples.html
 def convert_samplerate(audio_path: str, desired_sample_rate: int) -> np.ndarray:
+    """
+    Apply sample rate conversion
+
+    # Ref: https://deepspeech.readthedocs.io/en/v0.7.4/Python-Examples.html
+    """
     sox_cmd: str = "sox {} --type raw --bits 16 --channels 1 --rate {} --encoding signed-integer --endian little --compression 0.0 --no-dither -".format(
         quote(audio_path), desired_sample_rate
     )
@@ -43,18 +47,25 @@ def convert_samplerate(audio_path: str, desired_sample_rate: int) -> np.ndarray:
 
 
 def metadata_to_string(metadata: CandidateTranscript):
+    """
+    Translate CandidateTranscript to plain text
+    """
     return "".join(token.text for token in metadata.tokens).strip()
 
 
 def logmmse_denoise(audio: np.ndarray, sr: int):
     """
-    LogMMSE speech enhancement/noise reduction alogrithm
+    LogMMSE speech enhancement/noise reduction algorithm
     """
     return logmmse(audio, sr)
 
 
 def batch_on_silence(audio: np.ndarray, top_db: int, model: Model) -> str:
-    # Ref: http://jamesmontgomery.us/blog/Voice_Recognition_Model.html
+    """
+    Infer after natural gaps of silence
+
+    Ref: http://jamesmontgomery.us/blog/Voice_Recognition_Model.html
+    """
     results: list = []
     audio = audio.astype("float32")
     y = librosa.effects.split(audio, top_db=top_db, ref=np.mean)
@@ -71,10 +82,14 @@ def batch_on_silence(audio: np.ndarray, top_db: int, model: Model) -> str:
 
 def deepspeech_predict(
     wave_filename: str,
-    predict_on_silence: bool = True,
+    infer_after_silence: bool = True,
     top_db: int = 50,
     denoise: bool = False,
 ) -> str:
+    """
+    DeepSpeech is an open source Speech-To-Text engine, using a model trained
+    by machine learning techniques based on Baidu’s Deep Speech research paper.
+    """
     if not os.path.isfile(MODEL_PATH):
         raise Exception(f"Could not find model at {MODEL_PATH}")
 
@@ -85,7 +100,7 @@ def deepspeech_predict(
     if denoise:
         audio = logmmse_denoise(audio, sample_rate)
 
-    if predict_on_silence:
+    if infer_after_silence:
         return batch_on_silence(audio, top_db, model)
 
     return metadata_to_string(model.sttWithMetadata(audio, 1).transcripts[0])
