@@ -6,6 +6,8 @@ __pycache__/
 model/*.pbmm
 *egg-info
 
-notebooks/experimental_samples/
-notebooks/Experiments.ipynb
-notebooks/*.wav
+notebooks/tmp/
+
+dist/
+
+pip-wheel-metadata/

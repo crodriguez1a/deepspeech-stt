@@ -11,7 +11,6 @@ deepspeech = "^0.7.4"
 scipy = "^1.5.1"
 librosa = "^0.7.2"
 numba = "0.48"
-bpe-summarizer = "0.1.9"
 logmmse = "^1.5"
 
 [tool.poetry.dev-dependencies]

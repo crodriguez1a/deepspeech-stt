@@ -2,6 +2,7 @@ import os
 import shlex
 import subprocess
 import time
+from typing import Any, List, Sequence
 
 import librosa
 import numpy as np
@@ -60,7 +61,9 @@ def logmmse_denoise(audio: np.ndarray, sr: int):
     return logmmse(audio, sr)
 
 
-def batch_on_silence(audio: np.ndarray, top_db: int, model: Model) -> str:
+def batch_on_silence(
+    audio: np.ndarray, top_db: int, model: Model, verbose: bool
+) -> List[Any]:
     """
     Infer after natural gaps of silence
 
@@ -73,35 +76,44 @@ def batch_on_silence(audio: np.ndarray, top_db: int, model: Model) -> str:
         clip = audio[i[0] : i[1]]
         clip = clip.astype("int16")
         transcripts = metadata_to_string(model.sttWithMetadata(clip, 1).transcripts[0])
-        if transcripts:
+        if transcripts and verbose:
             print(transcripts, "...")
         results.append(transcripts)
 
-    return " ".join(results)
+    return results
 
 
 def deepspeech_predict(
     wave_filename: str,
     infer_after_silence: bool = True,
     top_db: int = 50,
-    denoise: bool = False,
-) -> str:
+    output_sentences: bool = False,
+    verbose: bool = False,
+) -> Sequence[Any]:
     """
     DeepSpeech is an open source Speech-To-Text engine, using a model trained
     by machine learning techniques based on Baidu’s Deep Speech research paper.
     """
     if not os.path.isfile(MODEL_PATH):
-        raise Exception(f"Could not find model at {MODEL_PATH}")
+        raise Exception(
+            f"""
+        Could not find model at {MODEL_PATH}.
+
+        Download Model from:
+        https://github.com/mozilla/DeepSpeech/releases
+
+        Export environment variable:
+        `export MODEL_PATH=/path/to/model/`
+        """
+        )
 
     model: Model = Model(MODEL_PATH)
     sample_rate: int = model.sampleRate()
     fs, audio = convert_samplerate(wave_filename, sample_rate)
 
-    if denoise:
-        audio = logmmse_denoise(audio, sample_rate)
-
     if infer_after_silence:
-        return batch_on_silence(audio, top_db, model)
+        results = batch_on_silence(audio, top_db, model, verbose)
+        return results if output_sentences else " ".join(results)
 
     return metadata_to_string(model.sttWithMetadata(audio, 1).transcripts[0])
 
