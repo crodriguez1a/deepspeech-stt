@@ -3,7 +3,7 @@
 
 ## Introduction
 
-A slim Python client for Mozilla's [DeepSpeech](https://github.com/mozilla/DeepSpeech/) STT
+A slim Python client for Mozilla's [DeepSpeech](https://github.com/mozilla/DeepSpeech/) speech-to-text
 
 ## Usage
 
