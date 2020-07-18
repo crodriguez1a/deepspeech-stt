@@ -18,7 +18,7 @@ Parameter | Default | Description
 ---|---|---
 `wave_filename` | `None` | Path to wav file
 `infer_after_silence`|`True`| Infer after natural gaps of silence
-`top_db` | `50` | The threshold (in decibels) below<br>reference to consider as silence
+`silence_threshold` | `50` | The threshold (in decibels) below<br>reference to consider as silence
 
 See [notebook](notebooks/Examples.ipynb) for examples
 
