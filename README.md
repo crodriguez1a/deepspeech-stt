@@ -16,10 +16,10 @@ ouput_text: str = deepspeech_predict(wav_file_path)
 
 Parameter | Default | Description
 ---|---|---
-`wave_filename` | `None` | Path to wav file
-`infer_after_silence`|`True`| Infer after natural gaps of silence
+`wave_filename` | `None` | Path to wave file
+`infer_after_silence`|`True`| Batch predictions split by natural gaps of silence
 `silence_threshold` | `50` | The threshold (in decibels) below<br>reference to consider as silence
-`filter`| `None` | Choice of signal filtering:<br> `butter_bandpass_filter`, `high_pass_filter`, `low_pass_filter` 
+`filter`| `None` | Choice of signal filtering:<br> `butter_bandpass_filter`, `high_pass_filter`, `low_pass_filter`
 See [notebook](notebooks/Examples.ipynb) for examples
 
 ## Installation
