@@ -1,4 +1,4 @@
-from typing import List, Sequence, Any
+from typing import Any, List, Sequence
 
 from nltk.corpus import words
 

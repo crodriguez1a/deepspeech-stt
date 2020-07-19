@@ -8,7 +8,6 @@ import librosa
 import numpy as np
 import scipy.signal as signal
 from deepspeech import CandidateTranscript, Model
-from logmmse import logmmse
 from scipy.io import wavfile as wav
 from tqdm.auto import tqdm
 
@@ -17,7 +16,12 @@ try:
 except ImportError:
     from pipes import quote
 
-from src.filters import butter_bandpass_filter, high_pass_filter, low_pass_filter
+from src.filters import (
+    butter_bandpass_filter,
+    high_pass_filter,
+    low_pass_filter,
+    logmmse_denoise,
+)
 
 MODEL_PATH: str = os.getenv(
     "MODEL_PATH", os.getcwd() + "/model/deepspeech-0.7.4-models.pbmm"
@@ -27,6 +31,7 @@ SIGNAL_FILTERS: list = [
     (high_pass_filter, ()),
     (low_pass_filter, ()),
     (butter_bandpass_filter, ()),
+    (logmmse_denoise, ([16000])),
 ]
 
 
@@ -67,27 +72,21 @@ def metadata_to_string(metadata: CandidateTranscript):
     return "".join(token.text for token in metadata.tokens).strip()
 
 
-def logmmse_denoise(audio: np.ndarray, sr: int):
-    """
-    LogMMSE speech enhancement/noise reduction algorithm
-    """
-    return logmmse(audio, sr)
-
-
-def apply_filter(audio: np.ndarray, filter: str):
-    fn = [(f, params) for f, params in SIGNAL_FILTERS if f.__qualname__ == filter]
-    if fn:
-        filt, params = fn[0]
-        audio = filt(audio, *params).astype("int16")
+def apply_filters(audio: np.ndarray, filters: list):
+    for filter in filters:
+        fn = [(f, params) for f, params in SIGNAL_FILTERS if f.__qualname__ == filter]
+        if fn:
+            filt, params = fn[0]
+            audio = filt(audio, *params).astype("int16")
     return audio
 
 
-def batch_on_silence(
+def batching_after_silence(
     audio: np.ndarray,
     silence_threshold: int,
     model: Model,
     verbose: bool = False,
-    filter: str = None,
+    filters: list = None,
 ) -> List[Any]:
     """
     Infer after natural gaps of silence
@@ -102,9 +101,11 @@ def batch_on_silence(
     for i in tqdm(y):
         clip = audio[i[0] : i[1]]
         clip = clip.astype("int16")
-        if filter:
-            clip = apply_filter(clip, filter)
-        clips.append((clip, filter or "no filter"))
+
+        if filters:
+            clip = apply_filters(clip, filters)
+
+        clips.append((clip, filters or ["no filter"]))
 
     for clip, meta in tqdm(clips):
         transcripts = metadata_to_string(model.sttWithMetadata(clip, 1).transcripts[0])
@@ -117,10 +118,10 @@ def batch_on_silence(
 
 def deepspeech_predict(
     wave_filename: str,
-    infer_after_silence: bool = True,
+    batch_after_silence: bool = False,
     silence_threshold: int = 50,
     verbose: bool = False,
-    filter: str = None,
+    filters: list = None,
 ) -> Sequence[Any]:
     """
     DeepSpeech is an open source Speech-To-Text engine, using a model trained
@@ -143,12 +144,12 @@ def deepspeech_predict(
     sample_rate: int = model.sampleRate()
     fs, audio = convert_samplerate(wave_filename, sample_rate)
 
-    if infer_after_silence:
-        results = batch_on_silence(audio, silence_threshold, model, verbose, filter)
+    if batch_after_silence:
+        results = batching_after_silence(audio, silence_threshold, model, verbose, filters)
         return results
 
-    elif filter:
-        audio = apply_filter(audio, filter)
+    elif filters:
+        audio = apply_filters(audio, filters)
 
     return metadata_to_string(model.sttWithMetadata(audio, 1).transcripts[0])
 
@@ -158,14 +159,14 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("--path", help="Path of wav")
-    parser.add_argument("--silence_threshold", help="Threshold for silence")
+    parser.add_argument("--silence_threshold", help="Threshold for silence", default=50)
     parser.add_argument("--verbose", action="store_true")
     parser.add_argument(
-        "--infer_after_silence",
+        "--batch_after_silence",
         action="store_true",
         help="Returns sequence of transcriptions inferred after natural silence",
     )
-    parser.add_argument("--filter", help="Signal filter", choices=SIGNAL_FILTERS)
+    parser.add_argument("--filters", help="Signal filter", nargs="+")
     args = parser.parse_args()
 
     tic = time.perf_counter()
@@ -173,8 +174,8 @@ if __name__ == "__main__":
         args.path,
         silence_threshold=int(args.silence_threshold),
         verbose=args.verbose,
-        infer_after_silence=args.infer_after_silence,
-        filter=args.filter,
+        batch_after_silence=args.batch_after_silence,
+        filters=args.filters,
     )
 
     print("---")

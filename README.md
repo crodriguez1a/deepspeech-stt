@@ -11,15 +11,20 @@ A slim Python client for Mozilla's [DeepSpeech](https://github.com/mozilla/DeepS
 ```
 from src.deepspeech_stt import deepspeech_predict
 
-ouput_text: str = deepspeech_predict(wav_file_path)
+ouput_text: str = deepspeech_predict(
+  wav_file_path,
+  batch_after_silence=True,
+  silence_threshold=45, # 45db
+  filters=["logmmse_denoise", "butter_bandpass_filter"]
+)
 ```
 
 Parameter | Default | Description
 ---|---|---
 `wave_filename` | `None` | Path to wave file
-`infer_after_silence`|`True`| Batch predictions split by natural gaps of silence
+`batch_after_silence`|`True`| Create batch from input splitting after natural gaps of silence
 `silence_threshold` | `50` | The threshold (in decibels) below<br>reference to consider as silence
-`filter`| `None` | Choice of signal filtering:<br> `butter_bandpass_filter`, `high_pass_filter`, `low_pass_filter`
+`filters`| `None` | List of signal filters to apply as pre-processing:<br> `butter_bandpass_filter`, `high_pass_filter`, `low_pass_filter`, `logmmse_denoise`
 See [notebook](notebooks/Examples.ipynb) for examples
 
 ## Installation

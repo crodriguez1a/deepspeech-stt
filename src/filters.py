@@ -1,4 +1,5 @@
 import numpy as np
+from logmmse import logmmse
 from numpy import pi, sin
 from pydub import AudioSegment
 from scipy.signal import butter, lfilter
@@ -65,3 +66,10 @@ def high_pass_filter(
     # Ref: https://github.com/jiaaro/pydub/blob/master/pydub/scipy_effects.py
     audio_segment = dub_segment(data, sample_rate)
     return np.array(audio_segment.high_pass_filter(cuttoff).get_array_of_samples())
+
+
+def logmmse_denoise(audio: np.ndarray, sr: int):
+    """
+    LogMMSE speech enhancement/noise reduction algorithm
+    """
+    return logmmse(audio, sr)
