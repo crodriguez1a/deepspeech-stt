@@ -8,7 +8,7 @@ A slim Python client for Mozilla's [DeepSpeech](https://github.com/mozilla/DeepS
 ## Usage
 
 
-```
+```python
 from src.deepspeech_stt import deepspeech_predict
 
 ouput_text: str = deepspeech_predict(
